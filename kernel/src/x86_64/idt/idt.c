@@ -2,6 +2,7 @@
 
 #include <x86_64/interrupts/pic.h>
 #include <x86_64/interrupts/timer.h>
+#include <x86_64/serial.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -44,6 +45,7 @@ void irq_handler(uint8_t irq) {
     switch (irq) {
     case 0:
         on_irq0();
+        serial_print(".");
         flanterm_write(ft_ctx, ".");
         pic_send_eoi(0);
         break;

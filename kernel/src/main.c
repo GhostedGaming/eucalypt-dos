@@ -5,10 +5,12 @@
 #include <flanterm/flanterm.h>
 #include <flanterm/fb.h>
 
+#include <x86_64/serial.h>
 #include <x86_64/gdt.h>
 #include <x86_64/interrupts/pic.h>
 #include <x86_64/idt/idt.h>
 #include <x86_64/interrupts/timer.h>
+#include <x86_64/memory/heap.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
@@ -71,18 +73,33 @@ void kmain(void) {
         0, 0,
         0, 0
     );
+    serial_init();
+    flanterm_write(ft_ctx, "Initializing Heap...\n");
+    serial_print("Initializing Heap...\n");
+    heap_init((void *)0xFFFF800000100000, 0x100000);
+    flanterm_write(ft_ctx, "Heap Initialized\n");
+    serial_print("Heap Initialized\n");
+    serial_print("Initializing GDT...\n");
     flanterm_write(ft_ctx, "Initializing GDT...\n");
     init_gdt();
     load_gdt();
     flanterm_write(ft_ctx, "GDT initialized\nRemapping PIC\n");
+    serial_print("GDT initialized\nRemapping PIC\n");
     PIC_remap(32, 47);
     flanterm_write(ft_ctx, "PIC Remapped Successfully\nInitializing IDT\n");
+    serial_print("PIC Remapped Successfully\nInitializing IDT\n");
     idt_init();
     flanterm_write(ft_ctx, "IDT Intiialized and Loaded\nInitializing Timer\n");
+    serial_print("IDT Intiialized and Loaded\nInitializing Timer\n");
     init_timer();
     flanterm_write(ft_ctx, "Timer Initialized\nEnabling Interrupts\n");
+    serial_print("Timer Initialized\nEnabling Interrupts\n");
     __asm__ volatile ("sti");
-    flanterm_write(ft_ctx, "Interrupts Enabled\nHalting");
+    flanterm_write(ft_ctx, "Interrupts Enabled\nTesting Kmalloc");
+    serial_print("Interrupts Enabled\nTesting Kmalloc\n");
+    kmalloc(1024);
+    flanterm_write(ft_ctx, "Kmalloc Test Successful\nSystem Halted\n");
+    serial_print("Kmalloc Test Successful\nSystem Halted\n");
 
     hcf();
 }
