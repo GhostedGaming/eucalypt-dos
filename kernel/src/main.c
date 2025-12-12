@@ -6,6 +6,9 @@
 #include <flanterm/fb.h>
 
 #include <x86_64/gdt.h>
+#include <x86_64/interrupts/pic.h>
+#include <x86_64/idt/idt.h>
+#include <x86_64/interrupts/timer.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
@@ -34,7 +37,10 @@ static void hcf(void) {
     }
 }
 
+struct flanterm_context *ft_ctx = NULL;
+
 void kmain(void) {
+    __asm__ volatile ("cli");
     if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
         hcf();
     }
@@ -50,7 +56,7 @@ void kmain(void) {
     uint64_t fb_height = framebuffer->height;
     uint64_t fb_pitch = framebuffer->pitch;
 
-    struct flanterm_context *ft_ctx = flanterm_fb_init(
+    ft_ctx = flanterm_fb_init(
         NULL,
         NULL,
         fb_ptr, fb_width, fb_height, fb_pitch,
@@ -65,11 +71,18 @@ void kmain(void) {
         0, 0,
         0, 0
     );
-
     flanterm_write(ft_ctx, "Initializing GDT...\n");
     init_gdt();
     load_gdt();
-    flanterm_write(ft_ctx, "GDT initialized\n");
+    flanterm_write(ft_ctx, "GDT initialized\nRemapping PIC\n");
+    PIC_remap(32, 47);
+    flanterm_write(ft_ctx, "PIC Remapped Successfully\nInitializing IDT\n");
+    idt_init();
+    flanterm_write(ft_ctx, "IDT Intiialized and Loaded\nInitializing Timer\n");
+    init_timer();
+    flanterm_write(ft_ctx, "Timer Initialized\nEnabling Interrupts\n");
+    __asm__ volatile ("sti");
+    flanterm_write(ft_ctx, "Interrupts Enabled\nHalting");
 
     hcf();
 }
