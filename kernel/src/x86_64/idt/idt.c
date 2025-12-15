@@ -119,7 +119,6 @@ void idt_init() {
         vectors[32 + vector] = true;
     }
 
-    // Syscall desc
     idt_set_descriptor(128, isr128_handler, 0x8E);
     IRQ_clear_mask(0);
     IRQ_clear_mask(1);

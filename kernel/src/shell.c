@@ -1,5 +1,6 @@
 #include <shell.h>
 #include <x86_64/allocator/heap.h>
+#include <x86_64/execute.h>
 #include <ramdisk/ramdisk.h>
 #include <ramdisk/fat12.h>
 #include <string.h>
@@ -17,12 +18,14 @@ char params[MAX_PARAMS][MAX_PARAM_LENGTH];
 int param_count = 0;
 
 typedef void (*command_handler_func)(void);
+typedef void (*app_entry_t)(void);
 
 void help_command(void);
 void clear_command(void);
 void listfs_command(void);
 void readfile_command(void);
 void writefile_command(void);
+void execute_command(void);
 void handle_backspace(void);
 
 typedef struct {
@@ -36,6 +39,7 @@ const command_t command_table[] = {
 	{"listfs", listfs_command},
 	{"readfile", readfile_command},
 	{"writefile", writefile_command},
+	{"execute", execute_command},
 };
 
 #define NUM_COMMANDS (sizeof(command_table) / sizeof(command_t))
@@ -290,4 +294,39 @@ void writefile_command(void) {
 	flanterm_write(ft_ctx, " bytes to ");
 	flanterm_write(ft_ctx, params[1]);
 	flanterm_write(ft_ctx, "\n");
+}
+
+void execute_command(void) {
+    if (param_count < 2) {
+        flanterm_write(ft_ctx, "Usage: execute <filename>\n");
+        return;
+    }
+    
+    dir_entry_t *file = find_file(params[1]);
+    if (!file) {
+        flanterm_write(ft_ctx, "File not found: ");
+        flanterm_write(ft_ctx, params[1]);
+        flanterm_write(ft_ctx, "\n");
+        return;
+    }
+    
+    uint32_t size;
+    uint8_t *data = read_file(file, &size);
+    
+    if (!data || size == 0) {
+        flanterm_write(ft_ctx, "File is empty or could not be read\n");
+        kfree(file);
+        return;
+    }
+    
+    flanterm_write(ft_ctx, "Executing ");
+    flanterm_write(ft_ctx, params[1]);
+    flanterm_write(ft_ctx, "...\n");
+    
+    load_and_execute_app(data, size);
+    
+    kfree(data);
+    kfree(file);
+    
+    flanterm_write(ft_ctx, "Application returned\n");
 }

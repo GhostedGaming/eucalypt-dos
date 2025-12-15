@@ -2,17 +2,28 @@ ENTRY(_start)
 OUTPUT_FORMAT(binary)
 
 SECTIONS {
-    . = 0x10000;
-    .text : {
-        *(.text)
+    . = 0x0;
+    
+    .text : ALIGN(16) {
+        *(.text*)
     }
-    .data : {
-        *(.data)
+    
+    .rodata : ALIGN(16) {
+        *(.rodata*)
     }
-    .bss : {
-        *(.bss)
+    
+    .data : ALIGN(16) {
+        *(.data*)
     }
-    .rodata : {
-        *(.rodata)
+    
+    .bss : ALIGN(16) {
+        *(.bss*)
+        *(COMMON)
+    }
+    
+    /DISCARD/ : {
+        *(.comment)
+        *(.note*)
+        *(.eh_frame*)
     }
 }

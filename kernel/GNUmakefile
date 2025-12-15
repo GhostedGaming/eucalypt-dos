@@ -181,15 +181,30 @@ ifeq ($(ARCH),x86_64)
 override OBJ += $(addprefix obj-$(ARCH)/,$(NASMFILES:.asm=.asm.o))
 endif
 override HEADER_DEPS := $(addprefix obj-$(ARCH)/,$(CFILES:.c=.c.d) $(ASFILES:.S=.S.d))
-# Compile the applications
-APPLICATION_FILES := $(shell find -L applications -type f -name '*.c' 2>/dev/null | LC_ALL=C sort)
+
+# Application files handling
+override APP_CFILES := $(shell find -L applications -type f -name '*.c' 2>/dev/null | LC_ALL=C sort)
+override APP_BINS := $(patsubst applications/%.c,../zfiles_to_copy/%,$(APP_CFILES))
+override APP_OBJ := $(addprefix obj-$(ARCH)/applications/,$(notdir $(APP_CFILES:.c=.c.o)))
+override APP_HEADER_DEPS := $(addprefix obj-$(ARCH)/applications/,$(notdir $(APP_CFILES:.c=.c.d)))
+
+# Application-specific linker flags
+override APP_LDFLAGS := \
+    -nostdlib \
+    -static \
+    -T linker-scripts/applications.lds
 
 # Default target. This must come first, before header dependencies.
 .PHONY: all
-all: bin-$(ARCH)/$(OUTPUT)
+all: bin-$(ARCH)/$(OUTPUT) applications
+
+# Build all applications
+.PHONY: applications
+applications: $(APP_BINS)
 
 # Include header dependencies.
 -include $(HEADER_DEPS)
+-include $(APP_HEADER_DEPS)
 
 # Link rules for the final executable.
 bin-$(ARCH)/$(OUTPUT): GNUmakefile linker-scripts/$(ARCH).lds $(OBJ)
@@ -213,15 +228,27 @@ obj-$(ARCH)/%.asm.o: %.asm GNUmakefile
 	nasm $(NASMFLAGS) $< -o $@
 endif
 
+# Compilation rules for application *.c files
+obj-$(ARCH)/applications/%.c.o: applications/%.c GNUmakefile
+	mkdir -p "$(dir $@)"
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+# Link and copy application binaries
+../zfiles_to_copy/%: obj-$(ARCH)/applications/%.c.o linker-scripts/applications.lds
+	mkdir -p "$(dir $@)"
+	$(LD) $(APP_LDFLAGS) $< -o $@
+
 # Remove object files and the final executable.
 .PHONY: clean
 clean:
 	rm -rf bin-$(ARCH) obj-$(ARCH)
+	rm -f $(APP_BINS)
 
 # Remove everything built and generated including downloaded dependencies.
 .PHONY: distclean
 distclean:
 	rm -rf bin-* obj-* .deps-obtained freestnd-c-hdrs cc-runtime limine-protocol
+	rm -f $(APP_BINS)
 
 # Install the final built executable to its final on-root location.
 .PHONY: install
