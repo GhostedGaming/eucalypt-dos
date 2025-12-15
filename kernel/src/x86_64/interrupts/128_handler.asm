@@ -22,7 +22,10 @@ isr128_handler:
     mov rsi, rbx
     mov rdx, rcx
     mov rcx, r8
+
+    sub rsp, 8 
     call syscall_handler
+    add rsp, 8
 
     pop r15
     pop r14
