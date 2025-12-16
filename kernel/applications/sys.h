@@ -15,8 +15,10 @@
     _ret; \
 })
 
-#define print(s)    SYSCALL(1, s, 0, 0)
-#define malloc(sz)  (void*)SYSCALL(2, sz, 0, 0)
-#define free(ptr)   SYSCALL(3, ptr, 0, 0)
+#define print(s)                    SYSCALL(1, s, 0, 0)
+#define malloc(sz)                  (void*)SYSCALL(2, sz, 0, 0)
+#define free(ptr)                   SYSCALL(3, ptr, 0, 0)
+#define write_file(f, d)            SYSCALL(4, f, d, 0)
+#define read_file(f, out_size_ptr)  (uint8_t*)SYSCALL(5, f, out_size_ptr, 0)
 
 #endif

@@ -13,4 +13,6 @@ void _start(void) {
         print(buf);
         free(buf);
     }
+
+    write_file("Syscall_Test.txt", "This is a syscall test for write");
 }

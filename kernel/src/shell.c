@@ -311,7 +311,7 @@ void wef_command(void) {
 		}
 	}
 	
-	write_file(params[1], (uint8_t *)content, content_pos);
+	write_file(params[1], (uint8_t *)content);
 	
 	flanterm_write(ft_ctx, "Wrote ");
 	char size_buf[16];

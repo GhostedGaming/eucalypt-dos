@@ -237,8 +237,9 @@ uint8_t *read_file(dir_entry_t *file, uint32_t *size) {
 	return data;
 }
 
-void write_file(const char *filename, uint8_t *data, uint32_t size) {
+void write_file(const char *filename, uint8_t *data) {
 	dir_entry_t *file = find_file(filename);
+	uint32_t size = strlen(data);
 	
 	if (!file) {
 		file = create_file(filename);
@@ -250,7 +251,7 @@ void write_file(const char *filename, uint8_t *data, uint32_t size) {
 	
 	if (!file) return;
 	
-	file->file_size = size;
+	file->file_size = strlen(data);
 	
 	uint32_t bytes_written = 0;
 	uint16_t prev_cluster = 0;

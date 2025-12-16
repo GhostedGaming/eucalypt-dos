@@ -28,6 +28,6 @@ uint32_t cluster_to_sector(uint16_t cluster);
 dir_entry_t *find_file(const char *filename);
 dir_entry_t *create_file(const char *filename);
 uint8_t *read_file(dir_entry_t *file, uint32_t *size);
-void write_file(const char *filename, uint8_t *data, uint32_t size);
+void write_file(const char *filename, uint8_t *data);
 
 #endif
