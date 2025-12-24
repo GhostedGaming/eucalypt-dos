@@ -7,4 +7,5 @@
 
 ## About
 ### Eucalypt DOS is a live boot OS
-### - Single tasking
+### - Multitasking
+### - Planned userland along with graphical interface like windows 95 or greater
