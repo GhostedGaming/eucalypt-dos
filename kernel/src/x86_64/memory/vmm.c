@@ -7,3 +7,4 @@ extern volatile struct limine_hhdm_request hhdm_request;
 void *phys_to_virt(uint64_t phys_addr) {
     return (void *)(phys_addr + hhdm_request.response->offset);
 }
+
