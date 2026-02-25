@@ -5,13 +5,18 @@
 #include <flanterm/flanterm.h>
 #include <flanterm/fb.h>
 
+// x86_64
 #include <x86_64/serial.h>
 #include <x86_64/gdt.h>
+// Interrupt galore
 #include <x86_64/interrupts/pic.h>
 #include <x86_64/idt/idt.h>
 #include <x86_64/interrupts/timer.h>
 #include <x86_64/interrupts/keyboard.h>
+// Allocator stuff
 #include <x86_64/allocator/heap.h>
+#include <x86_64/allocator/frame_allocator.h>
+// Storage stuff
 #include <ramdisk/ramdisk.h>
 #include <ramdisk/fat12.h>
 
@@ -42,6 +47,12 @@ volatile struct limine_hhdm_request hhdm_request = {
     .revision = 0
 };
 
+__attribute__((used, section(".limine_requests")))
+volatile struct limine_memmap_request memmap_request = {
+    .id = LIMINE_MEMMAP_REQUEST_ID,
+    .revision = 0
+};
+
 __attribute__((used, section(".limine_requests_start")))
 static volatile uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
 
@@ -63,6 +74,10 @@ void kmain(void) {
     }
 
     if (module_request.response == NULL || module_request.response->module_count < 1) {
+        hcf();
+    }
+    
+    if (memmap_request.response == NULL) {
         hcf();
     }
     
@@ -107,7 +122,10 @@ void kmain(void) {
     load_gdt();
     PIC_remap(32, 47);
 
-    heap_init((void *)hhdm_request.response->offset + 0x100000, 0x100000);
+    serial_print("Initializing frame allocator\n");
+    frame_allocator_init(memmap_request.response, hhdm_request.response->offset);
+    serial_print("Initializing heap allocator\n");
+    heap_init();
 
     idt_init();
     init_timer();

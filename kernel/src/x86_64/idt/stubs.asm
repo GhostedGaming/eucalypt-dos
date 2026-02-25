@@ -34,6 +34,7 @@ isr_common_stub:
     push r15
     
     mov rdi, [rsp + 15*8]
+    mov rsi, rsp
     call exception_handler
     
     pop r15
