@@ -1,76 +1,80 @@
-
 #include <x86_64/commands.h>
-
 #include <stdint.h>
 
-#define PIC1		0x20 // Master PIC IO address
-#define PIC2		0xA0 // Slave PIC IO address
+// I/O base addresses for Master and Slave PICs
+#define PIC1		    0x20
+#define PIC2		    0xA0
 #define PIC1_COMMAND	PIC1
-#define PIC1_DATA	(PIC1+1)
+#define PIC1_DATA	    (PIC1+1)
 #define PIC2_COMMAND	PIC2
-#define PIC2_DATA	(PIC2+1)
-#define ICW1_ICW4	0x01
-#define ICW1_SINGLE	0x02
-#define ICW1_INTERVAL4	0x04
-#define ICW1_LEVEL	0x08
-#define ICW1_INIT	0x10
+#define PIC2_DATA	    (PIC2+1)
 
-#define ICW4_8086	0x01
-#define ICW4_AUTO	0x02
-#define ICW4_BUF_SLAVE	0x08
-#define ICW4_BUF_MASTER	0x0C
-#define ICW4_SFNM	0x10
+// Initialization Control Word 1 bits
+#define ICW1_ICW4	    0x01 // Expect ICW4 during init
+#define ICW1_SINGLE	    0x02 // Single mode (0 = Cascade)
+#define ICW1_INTERVAL4	0x04 // Call address interval (8080/8085)
+#define ICW1_LEVEL	    0x08 // Level triggered mode
+#define ICW1_INIT	    0x10 // Initialization bit
 
-#define CASCADE_IRQ 2
+// Initialization Control Word 4 bits
+#define ICW4_8086	    0x01 // 8086/88 (MCS-80/85) mode
+#define PIC_EOI		    0x20 // End of Interrupt command
+#define CASCADE_IRQ     2    // Slave PIC is connected to IRQ2 on Master
 
-// Pic commands
-#define PIC_EOI		0x20	
-
+// Remap the PIC interrupt offsets to avoid conflicts with CPU exceptions
 void PIC_remap(int offset1, int offset2) {
-    outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);  // starts the initialization sequence (in cascade mode)
+    // Start initialization sequence
+    outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);
 	outb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
-	outb(PIC1_DATA, offset1);                 // ICW2: Master PIC vector offset
-	outb(PIC2_DATA, offset2);                 // ICW2: Slave PIC vector offset
-	outb(PIC1_DATA, 1 << CASCADE_IRQ);        // ICW3: tell Master PIC that there is a slave PIC at IRQ2
-	outb(PIC2_DATA, 2);                       // ICW3: tell Slave PIC its cascade identity (0000 0010)
-	
-	outb(PIC1_DATA, ICW4_8086);               // ICW4: have the PICs use 8086 mode (and not 8080 mode)
+
+	// ICW2: Set vector offsets (usually 0x20 for Master, 0x28 for Slave)
+	outb(PIC1_DATA, offset1);
+	outb(PIC2_DATA, offset2);
+
+	// ICW3: Define Master/Slave relationship
+	outb(PIC1_DATA, 1 << CASCADE_IRQ); // Master: Slave is on IRQ2
+	outb(PIC2_DATA, 2);                // Slave: Tell it its identity is 2
+
+	// ICW4: Set environment mode
+	outb(PIC1_DATA, ICW4_8086);
 	outb(PIC2_DATA, ICW4_8086);
 
+	// Mask all interrupts initially
 	outb(PIC1_DATA, 0);
 	outb(PIC2_DATA, 0);
 }
 
+// Signal the PIC that an interrupt has been handled
 void pic_send_eoi(uint8_t irq) {
+    // If IRQ came from Slave PIC, notify Slave
     if (irq >= 8) outb(PIC2_COMMAND, PIC_EOI);
 
+    // Always notify Master PIC
     outb(PIC1_COMMAND, PIC_EOI);
 }
 
+// Disable a specific IRQ line
 void IRQ_set_mask(uint8_t irq) {
     uint16_t port;
-    uint8_t value;
-
     if(irq < 8) {
         port = PIC1_DATA;
     } else {
         port = PIC2_DATA;
         irq -= 8;
     }
-    value = inb(port) | (1 << irq);
+    uint8_t value = inb(port) | (1 << irq);
     outb(port, value);        
 }
 
+// Enable a specific IRQ line
 void IRQ_clear_mask(uint8_t irq) {
     uint16_t port;
-    uint8_t value;
-
     if(irq < 8) {
         port = PIC1_DATA;
     } else {
         port = PIC2_DATA;
         irq -= 8;
     }
-    value = inb(port) & ~(1 << irq);
+    uint8_t value = inb(port) & ~(1 << irq);
     outb(port, value);        
 }

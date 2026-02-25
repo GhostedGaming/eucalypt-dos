@@ -2,33 +2,16 @@ global isr128_handler
 extern syscall_handler
 
 isr128_handler:
-    push r11
-    push r10
-    push r9
-    push r8
-    push rdi
-    push rsi
-    push rdx
     push rcx
-    push rax
+    push r11
 
-    mov rdi, rax
-    mov rsi, rbx
-    mov rdx, rcx
-    mov rcx, rdx
-    mov r8, rsi
-    mov r9, rdi
+    mov rcx, rdx    ; arg3 -> rcx (4th arg in sysv)
+    mov rdx, rsi    ; arg2 -> rdx (3rd arg)
+    mov rsi, rdi    ; arg1 -> rsi (2nd arg)
+    mov rdi, rax    ; syscall number -> rdi (1st arg)
 
     call syscall_handler
 
-    pop rax
-    pop rcx
-    pop rdx
-    pop rsi
-    pop rdi
-    pop r8
-    pop r9
-    pop r10
     pop r11
-
+    pop rcx
     iretq

@@ -122,9 +122,7 @@ void kmain(void) {
     load_gdt();
     PIC_remap(32, 47);
 
-    serial_print("Initializing frame allocator\n");
     frame_allocator_init(memmap_request.response, hhdm_request.response->offset);
-    serial_print("Initializing heap allocator\n");
     heap_init();
 
     idt_init();
@@ -134,12 +132,6 @@ void kmain(void) {
     __asm__ volatile ("sti");
     init_ramdisk();
     init_fat12();
-    uint8_t buf[512] = {0};
-    read_ramdisk_sector(0, buf);
-    for (int i = 0; i < 512; i++) {
-        serial_print_hex(buf[i]);
-        serial_putchar(' ');
-    }
 
     hcf();
 }

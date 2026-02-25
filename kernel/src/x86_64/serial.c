@@ -21,7 +21,7 @@ void serial_putchar(char c) {
     outb(COM1_PORT + UART_DATA, (uint8_t)c);
 }
 
-void serial_print_num(uint64_t num) {
+void serial_print_num(long int num) {
     char buffer[21];
     int i = 0;
 
