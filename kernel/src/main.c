@@ -16,6 +16,7 @@
 // Allocator stuff
 #include <x86_64/allocator/heap.h>
 #include <x86_64/allocator/frame_allocator.h>
+#include <x86_64/allocator/vmm.h>
 // Storage stuff
 #include <ramdisk/ramdisk.h>
 #include <ramdisk/fat12.h>
@@ -123,6 +124,7 @@ void kmain(void) {
     PIC_remap(32, 47);
 
     frame_allocator_init(memmap_request.response, hhdm_request.response->offset);
+    vmm_init();
     heap_init();
 
     idt_init();
